@@ -30,5 +30,5 @@ def bbox(lines: list[Line]) -> tuple[float, float, float, float]:
     """선 묶음을 감싸는 네모"""
     xs = [v for ln in lines for v in(ln.x1, ln.x2)]
     ys = [v for ln in lines for v in(ln.y1, ln.y2)]
-    return min(xs), min(ys), max(xs), max(ys)
+    return min(xs), max(xs), min(ys), max(ys)
 
