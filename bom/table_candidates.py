@@ -3,7 +3,7 @@ from collections import deque
 from bom.extract_lines import Line
 from bom.geometry import bbox, is_horizontal, is_vertical, length, touches
 
-MIN_TABLE_LINE = 19.0    # 표 선 최소 길이 (pt). 글자 획은 이보다 짧고, 행 높이는 약 19.8
+MIN_TABLE_LINE = 14.0    # 표 선 최소 길이 (pt). 글자 획은 이보다 짧고, 행 높이는 약 19.8
 FRAME_LEN_RATIO = 0.5    # 테두리: 도면 폭(높이)의 50% 이상 길이
 FRAME_EDGE_RATIO = 0.06  # 테두리: 도면 가장자리에서 6% 이내
 
