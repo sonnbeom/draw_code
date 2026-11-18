@@ -6,7 +6,7 @@
 - **설계 변경 (2026-11-17): 위치·구조는 선, 글자는 OCR.** 결정 사항은 `docs/15_전체_파이프라인.md` (근거 docs 01~14)
 - 글자 직접 학습(04·05·07~11)은 보류. ML은 칸 신뢰도(docs/14 5절)·표 종류 분류(docs/03 6절)
 - 구현 로드맵: `docs/16_구현_로드맵.md` (단계별 파일·확인 기준·패키지)
-- 코드: `explore/drawing_check.py`(get_drawings 구조 확인)만 있음. `bom/extract_lines.py`·`find_table.py`는 빈 파일
+- 코드: `explore/drawing_check.py`(get_drawings 구조 확인)만 있음. `bom/extract_lines.py` 완료, `find_table.py`는 지우고 geometry·table_candidates로 나눔
 
 ## 다음 할 일
 1. [x] `docs/보고_설계요약.md` 갱신 (2026-11-17, 4절 변경)
@@ -27,6 +27,9 @@
 - [ ] 환경: `.venv`에 pymupdf·numpy만. matplotlib(1단계)·openpyxl(6)·scikit-learn(7)·OCR 엔진(5)은 해당 단계에서 `uv add`
 - [x] 1 선 추출: `bom/extract_lines.py`, 확인 `explore/plot_lines.py`
 - [ ] 2 표 찾기 + 칸 나누기 (선만). 확인: 행 수 = json `num_items`
+  - [x] 설계: 후보(수평/수직 + 길이≥19) → 테두리 선 지움(50%↑ + 가장자리 6%) → 닿는 것끼리 BFS (docs/03 1·1-2·2절)
+  - [ ] 코드: `bom/geometry.py` + `bom/table_candidates.py` + `explore/plot_groups.py` (묶음별 색칠) / case_0475 확인
+  - [ ] 설계: 묶음 중 BOM 고르기, 행·열 경계
 - [ ] 3 연결 추적: 끝점 공유로 따라가기. 확인: 88500 25/25 재현, 수량 열 수 = `num_parents`
 - [ ] 4 규칙 처리: 취소선(짧은 것 포함)·삼각형·연결선. 확인: DEL·rev가 json과 일치
 - [ ] 5 OCR (+ 머리글 OCR로 표 종류·열 역할). 확인: 샘플 val 칸 정확도, 혼동 글자 목록
