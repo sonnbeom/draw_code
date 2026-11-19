@@ -35,10 +35,16 @@ pdfs = sorted(SAMPLE_DIR.glob("case_*.pdf"))
 success = 0
 not_found = []   # BOM을 아예 못 찾은 도면
 wrong_count = [] # BOM은 찾았는데 상위 품번 수가 정답과 다른 도면
+slowest_name, slowest_time = "", 0.0  # 가장 오래 걸린 도면과 그 시간
 
 start = time.perf_counter()
 for pdf in pdfs:
+    one_start = time.perf_counter()  # 도면 하나 시간 재기 시작
     match = find_bom(pdf)
+    one_time = time.perf_counter() - one_start  # 도면 하나 걸린 시간
+    if one_time > slowest_time:  # 지금까지 제일 길면 기억
+        slowest_name, slowest_time = pdf.name, one_time
+
     expected = truth[pdf.name]["num_parents"]
     if match is None:
         not_found.append(pdf.name)
@@ -48,7 +54,8 @@ for pdf in pdfs:
         success += 1
 elapsed = time.perf_counter() - start
 
-print(f"\n[샘플 {len(pdfs)}개] {elapsed:.1f}초 (도면당 평균 {elapsed / len(pdfs):.2f}초)")
+print(f"\n[샘플 {len(pdfs)}개] {elapsed:.1f}초")
+print(f"  도면당 평균 {elapsed / len(pdfs):.3f}초, 가장 오래 걸린 도면 {slowest_name} {slowest_time:.3f}초")
 print(f"  BOM 찾고 상위 품번 수도 정답과 같음: {success}개 ({success / len(pdfs):.1%})")
 print(f"  BOM 못 찾음: {len(not_found)}개")
 for name in not_found[:10]:  # 많으면 앞 10개만

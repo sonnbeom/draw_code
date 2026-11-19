@@ -1,15 +1,16 @@
 from collections import deque
 
+from bom.arrows import merge_arrows 
 from bom.extract_lines import Line
 from bom.geometry import bbox, is_horizontal, is_vertical, length, touches
 
-MIN_TABLE_LINE = 14.0    # 표 선 최소 길이 (pt). 글자 획은 이보다 짧고, 행 높이는 약 19.8
+MIN_TABLE_LINE = 14.0    # 표 선 최소 길이 (pt). 글자 획은 최대 14.2, 상위 박스 1칸 세로변은 18.4라 그 사이로 잡음
 FRAME_LEN_RATIO = 0.5    # 테두리: 도면 폭(높이)의 50% 이상 길이
 FRAME_EDGE_RATIO = 0.06  # 테두리: 도면 가장자리에서 6% 이내
 
 # ① 후보 거르기 ------------------------------------------------------------
 def filter_candidates(lines: list[Line]) -> list[Line]:
-    """  가로 또는 세로이면서(대각선 아님) 길이 19 이상인 선만 남긴다 글자 제거"""
+    """  가로 또는 세로이면서(대각선 아님) 길이 14 이상인 선만 남긴다 글자 제거"""
     return [
         ln for ln in lines
         if (is_horizontal(ln) or is_vertical(ln)) and length(ln) >= MIN_TABLE_LINE
@@ -60,11 +61,11 @@ def group_lines(lines: list[Line]) -> list[list[Line]]:
         groups.append(group)
     return groups
 
-# 전체 ---------------------------------------------------------------------
 def find_table_candidates(lines: list[Line]) -> list[list[Line]]:
-    """① → ② → ③을 차례로 실행해 표 후보 묶음을 큰 순서로 돌려준다."""
-    candidates = filter_candidates(lines)
-    no_frame = remove_frame(candidates)
-    groups = group_lines(no_frame)
-    groups.sort(key=len, reverse=True)  # 선이 많은 묶음부터
+    """⓪ → ① → ② → ③을 차례로 실행해 표 후보 묶음을 큰 순서로 돌려준다."""
+    merged = merge_arrows(lines)            # ⓪ 화살촉: 선 끝을 꼭짓점까지 늘림 (트러블슈팅 04)
+    candidates = filter_candidates(merged)  # ① 글자 획 제거 (길이 14 미만, 대각선)
+    no_frame = remove_frame(candidates)     # ② 도면 테두리 제거
+    groups = group_lines(no_frame)          # ③ 닿는 선끼리 묶기
+    groups.sort(key=len, reverse=True)      # 선이 많은 묶음부터
     return groups
