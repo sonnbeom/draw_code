@@ -23,12 +23,12 @@ start = time.perf_counter()  # 초 단위 시계. Java의 System.nanoTime()과 �
 match = find_bom(SAMPLE_DIR / "case_0001.pdf")
 elapsed = time.perf_counter() - start
 
-x0, x1, y0, y1 = bbox(match.lines)
+x_min, x_max, y_min, y_max = bbox(match.lines)
 print(f"[case_0001] {elapsed:.2f}초")
-print(f"  BOM 위치: x {x0:.1f}~{x1:.1f}, y {y0:.1f}~{y1:.1f} (표 윗변 y {match.top.y1:.1f})")
+print(f"  BOM 위치: x {x_min:.1f}~{x_max:.1f}, y {y_min:.1f}~{y_max:.1f} (표 윗변 y {match.bom_top.y1:.1f})")
 print(f"  상위 품번 {len(match.connectors)}개와 연결됨")
-for c in match.connectors:
-    print(f"    상위 박스 y {c.leg.y1:.1f} 칸 → 수량 열 x {c.drop.x1:.1f}")
+for conn in match.connectors:
+    print(f"    상위 박스 y {conn.leg.y1:.1f} 칸 → 수량 열 x {conn.drop.x1:.1f}")
 
 # 2) 샘플 820개 전체 -------------------------------------------------------
 pdfs = sorted(SAMPLE_DIR.glob("case_*.pdf"))
@@ -61,5 +61,5 @@ print(f"  BOM 못 찾음: {len(not_found)}개")
 for name in not_found[:10]:  # 많으면 앞 10개만
     print(f"    {name}")
 print(f"  BOM은 찾았지만 상위 품번 수가 다름: {len(wrong_count)}개")
-for name, expected, got in wrong_count[:10]:
-    print(f"    {name}: 정답 {expected}개, 찾은 연결선 {got}개")
+for name, expected, found_count in wrong_count[:10]:
+    print(f"    {name}: 정답 {expected}개, 찾은 연결선 {found_count}개")

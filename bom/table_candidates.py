@@ -19,19 +19,19 @@ def filter_candidates(lines: list[Line]) -> list[Line]:
 # ② 테두리 선 지우기 -------------------------------------------------------
 def remove_frame(lines: list[Line]) -> list[Line]:
     x_min, x_max, y_min, y_max = bbox(lines) # 도면 전체 범위 = 후보 선 전체를 감싸는 네모
-    w = x_max - x_min  # 도면 폭
-    h = y_max - y_min  # 도면 높이
+    drawing_width = x_max - x_min   # 도면 폭
+    drawing_height = y_max - y_min  # 도면 높이
 
     kept = []
     for ln in lines:
         if is_horizontal(ln):
-            long_enough = length(ln) >= FRAME_LEN_RATIO * w # 길이가 도면 폭의 50% 이상인지
-            near_edge = (ln.y1 - y_min <= FRAME_EDGE_RATIO * h  #선의 y가 위쪽 끝이나 아래쪽 끝에서 도면 높이의 6% 이내인지 안에 있는지
-                         or y_max - ln.y1 <= FRAME_EDGE_RATIO * h)
+            long_enough = length(ln) >= FRAME_LEN_RATIO * drawing_width # 길이가 도면 폭의 50% 이상인지
+            near_edge = (ln.y1 - y_min <= FRAME_EDGE_RATIO * drawing_height  #선의 y가 위쪽 끝이나 아래쪽 끝에서 도면 높이의 6% 이내인지 안에 있는지
+                         or y_max - ln.y1 <= FRAME_EDGE_RATIO * drawing_height)
         else:  # 세로선 (①을 거쳤으니 가로 아니면 세로)
-            long_enough = length(ln) >= FRAME_LEN_RATIO * h
-            near_edge = (ln.x1 - x_min <= FRAME_EDGE_RATIO * w      # 왼쪽 가장자리
-                         or x_max - ln.x1 <= FRAME_EDGE_RATIO * w)  # 오른쪽 가장자리
+            long_enough = length(ln) >= FRAME_LEN_RATIO * drawing_height
+            near_edge = (ln.x1 - x_min <= FRAME_EDGE_RATIO * drawing_width      # 왼쪽 가장자리
+                         or x_max - ln.x1 <= FRAME_EDGE_RATIO * drawing_width)  # 오른쪽 가장자리
 
         if not (long_enough and near_edge):  # 둘 다 맞아야 테두리 → 아니면 남긴다
             kept.append(ln)
@@ -40,27 +40,28 @@ def remove_frame(lines: list[Line]) -> list[Line]:
 # ③ 닿는 것끼리 묶기 -------------------------------------------------------
 def group_lines(lines: list[Line]) -> list[list[Line]]:
     """닿는 선끼리 묶는다. 이웃의 이웃도 같은 묶음 (연결 요소, BFS)."""
-    n = len(lines)
-    visited = [False] * n  # Java의 boolean[] visited = new boolean[n]
+    line_count = len(lines)
+    visited = [False] * line_count  # Java의 boolean[] visited = new boolean[n]
     groups = []
 
-    for start in range(n):
-        if visited[start]:
+    for seed_idx in range(line_count):
+        if visited[seed_idx]:
             continue
-        # 새 묶음 시작
-        visited[start] = True
-        queue = deque([start])  # Java의 ArrayDeque
+        # 새 묶음 시작 (seed = 이 묶음의 첫 선)
+        visited[seed_idx] = True
+        queue = deque([seed_idx])  # Java의 ArrayDeque
         group = []
         while queue:
-            i = queue.popleft()
-            group.append(lines[i])
-            for j in range(n):  # 아직 안 본 선 중 i와 닿는 것을 대기줄에
-                if not visited[j] and touches(lines[i], lines[j]):
-                    visited[j] = True
-                    queue.append(j)
+            current_idx = queue.popleft()
+            group.append(lines[current_idx])
+            for other_idx in range(line_count):  # 아직 안 본 선 중 current와 닿는 것을 대기줄에
+                if not visited[other_idx] and touches(lines[current_idx], lines[other_idx]):
+                    visited[other_idx] = True
+                    queue.append(other_idx)
         groups.append(group)
     return groups
 
+# 전체 ---------------------------------------------------------------------
 def find_table_candidates(lines: list[Line]) -> list[list[Line]]:
     """⓪ → ① → ② → ③을 차례로 실행해 표 후보 묶음을 큰 순서로 돌려준다."""
     merged = merge_arrows(lines)            # ⓪ 화살촉: 선 끝을 꼭짓점까지 늘림 (트러블슈팅 04)

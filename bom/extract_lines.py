@@ -23,23 +23,23 @@ def extract_lines(pdf_path: str, page_no: int = 0) -> list[Line]:
     for path_id, path in enumerate(page.get_drawings()):
         color = tuple(path['color']) if path['color'] else (0, 0, 0)  # RGB 0~1. 검정 = (0, 0, 0)
         width = path['width']
-        
+
         for item in path['items']:
-            kind = item[0]
+            item_kind = item[0]
 
-            if kind == "l":
-                p1, p2 = item[1], item[2]
-                lines.append(Line(p1[0], p1[1], p2[0], p2[1], color, width, path_id))
+            if item_kind == "l":
+                line_start, line_end = item[1], item[2]
+                lines.append(Line(line_start[0], line_start[1], line_end[0], line_end[1], color, width, path_id))
 
-            elif kind == "qu":
-                q = item[1]
-                corners = [q.ul, q.ur, q.lr, q.ll]  # 왼위 → 오위 → 오아래 → 왼아래 (한 바퀴)
+            elif item_kind == "qu":
+                quad = item[1]
+                corners = [quad.ul, quad.ur, quad.lr, quad.ll]  # 왼위 → 오위 → 오아래 → 왼아래 (한 바퀴)
                 for i in range(4):
-                    a = corners[i]
-                    b = corners[(i + 1) % 4]  # 마지막 꼭짓점은 첫 꼭짓점과 이어짐
-                    lines.append(Line(a.x, a.y, b.x, b.y, color, width, path_id))
+                    corner_from = corners[i]
+                    corner_to = corners[(i + 1) % 4]  # 마지막 꼭짓점은 첫 꼭짓점과 이어짐
+                    lines.append(Line(corner_from.x, corner_from.y, corner_to.x, corner_to.y, color, width, path_id))
             else:
                 # 지금까지 데이터엔 "l"·"qu"만 있음. 다른 게 나오면 조용히 버리지 말고 바로 알린다
-                raise ValueError(f"예상 못한 item 종류: {kind} (path {path_id})")
+                raise ValueError(f"예상 못한 item 종류: {item_kind} (path {path_id})")
     doc.close()
     return lines

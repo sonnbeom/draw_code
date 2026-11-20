@@ -7,21 +7,21 @@ TOUCH_TOL = 0.5     # 맞닿음 판정 허용 오차 (pt). 샘플에선 닿는 �
 
 
 def _tilt_deg(along: float, across: float) -> float:
-    """ y 변화량, x 변화량을 기반으로 각도를 측정 두번째 인자 기분으로 측정 
+    """ 진행 방향 변화량(along), 옆 방향 변화량(across)을 기반으로 각도를 측정
     예: 세로선이면 along = y 변화량, across = x 변화량."""
     return math.degrees(math.atan2(across, along))  # atan2(옆, 진행) = 진행 방향에서 벌어진 각
 
 def is_horizontal(line: Line) -> bool:
     """가로선인가: 가로 방향에서 3° 이하로 기울었다."""
-    dx = abs(line.x2 - line.x1)
-    dy = abs(line.y2 - line.y1)
-    return dx > 0 and _tilt_deg(dx, dy) <= MAX_TILT_DEG  # dx > 0: 가로 변화가 있어야 하며 y 변화량은 각도로 측정해서 3도 까지 허용
+    x_change = abs(line.x2 - line.x1)
+    y_change = abs(line.y2 - line.y1)
+    return x_change > 0 and _tilt_deg(x_change, y_change) <= MAX_TILT_DEG  # 가로 변화가 있어야 하며 y 변화량은 각도로 측정해서 3도 까지 허용
 
 def is_vertical(line: Line) -> bool:
     """세로선인가: 세로 방향에서 3° 이하로 기울었다."""
-    dx = abs(line.x2 - line.x1)
-    dy = abs(line.y2 - line.y1)
-    return dy > 0 and _tilt_deg(dy, dx) <= MAX_TILT_DEG # dy > 0: 세로 변화가 있어야 하며 x 변화량은 각도로 측정해서 3도 까지 허용
+    x_change = abs(line.x2 - line.x1)
+    y_change = abs(line.y2 - line.y1)
+    return y_change > 0 and _tilt_deg(y_change, x_change) <= MAX_TILT_DEG # 세로 변화가 있어야 하며 x 변화량은 각도로 측정해서 3도 까지 허용
 
 def length(line: Line) -> float:
     """선분 길이 = x 변화량 + y 변화량 (가로·세로선이면 실제 길이와 거의 같다)"""
@@ -38,20 +38,18 @@ def bottom_end(line: Line) -> tuple[float, float]:
     return (line.x2, line.y2) if line.y1 <= line.y2 else (line.x1, line.y1)
 
 def point_on_line(x: float, y: float, line: Line) -> bool:
-    """점 (x, y)가 선 ln 위에 있는가 (허용 오차 포함).
+    """점 (x, y)가 선 line 위에 있는가 (허용 오차 포함).
     가로·세로선이라 선의 x범위·y범위 안에 들어오면 선 위에 있는 것이다."""
     return (min(line.x1, line.x2) - TOUCH_TOL <= x <= max(line.x1, line.x2) + TOUCH_TOL
             and min(line.y1, line.y2) - TOUCH_TOL <= y <= max(line.y1, line.y2) + TOUCH_TOL)
 
-def touches(a: Line, b: Line) -> bool:
+def touches(line_a: Line, line_b: Line) -> bool:
     """두 선이 닿는가: 한 선의 끝점이 다른 선 위에 있다 (모서리·T자 모두)."""
-    return (point_on_line(a.x1, a.y1, b) or point_on_line(a.x2, a.y2, b)
-            or point_on_line(b.x1, b.y1, a) or point_on_line(b.x2, b.y2, a))
+    return (point_on_line(line_a.x1, line_a.y1, line_b) or point_on_line(line_a.x2, line_a.y2, line_b)
+            or point_on_line(line_b.x1, line_b.y1, line_a) or point_on_line(line_b.x2, line_b.y2, line_a))
 
 def bbox(lines: list[Line]) -> tuple[float, float, float, float]:
     """선 묶음을 감싸는 네모. 반환 순서: (x_min, x_max, y_min, y_max) (트러블슈팅 01)"""
-    xs = [v for ln in lines for v in (ln.x1, ln.x2)]
-    ys = [v for ln in lines for v in (ln.y1, ln.y2)]
-    return min(xs), max(xs), min(ys), max(ys)
-
-
+    all_x = [v for ln in lines for v in (ln.x1, ln.x2)]
+    all_y = [v for ln in lines for v in (ln.y1, ln.y2)]
+    return min(all_x), max(all_x), min(all_y), max(all_y)
