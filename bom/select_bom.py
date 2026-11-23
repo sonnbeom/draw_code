@@ -25,6 +25,7 @@ class Connector:
     leg: Line        # 가로 부분
     drop: Line       # 세로 부분
     box_side: Line   # 출발한 모부품 박스의 세로변
+    leg_start: Point # leg의 박스 쪽 끝 (3단계에서 박스 몇 번째 행인지 판정)
 
 @dataclass(frozen=True)
 class BomMatch:
@@ -104,23 +105,26 @@ def find_connectors(group: list[Line], bom_top: Line) -> list[Connector]:
         box_side = _find_box_side(group, drop, leg_start) # leg 출발점이 닿는 상위 bom의 세로변
         if box_side is None:
             continue
-        connectors.append(Connector(leg, drop, box_side))
+        connectors.append(Connector(leg, drop, box_side, leg_start))  # 변경: leg_start도 저장
     return connectors
 
-# ③ 박스 행 수 -------------------------------------------------------------
-def count_box_rows(group: list[Line], box_side: Line) -> int:
-    """상위 BOM이 몇 행(칸)으로 나눠져 있는지 세는 함수 box_side를 기준으로 계산
+def box_row_ys(group: list[Line], box_side: Line) -> list[float]:
+    """상위 박스 행 경계 y 목록 (위 → 아래). 행 수 = len - 1
     박스 가로선은 세로변에 닿는 끝에서 왼쪽으로 뻗음. 오른쪽으로 뻗는 연결선 leg는 배제합니다.
     """
-    ys = set()  
+    ys = set()
     for ln in group:
         if not is_horizontal(ln):
             continue
-        for end, other in _ends(ln):                        # 변경: 두 끝점을 각각 본다
+        for end, other in _ends(ln):                        # 두 끝점을 각각 본다
             if (point_on_line(*end, box_side)               # 이 끝이 세로변 위에 있고
                     and other[0] < end[0] - TOUCH_TOL):     # 반대쪽 끝이 왼쪽이면 박스 가로선
-                ys.add(round(end[1], 1))  # 변경: 그 끝점의 y. 같은 높이 선이 여러 개여도 한 번만
-    return max(len(ys) - 1, 0)
+                ys.add(round(end[1], 1))  # 같은 높이 선이 여러 개여도 한 번만
+    return sorted(ys)
+
+def count_box_rows(group: list[Line], box_side: Line) -> int:
+    """상위 박스가 몇 행인지 (경계 y 개수 - 1)"""
+    return max(len(box_row_ys(group, box_side)) - 1, 0)
 
 # 전체 ---------------------------------------------------------------------
 def select_bom(groups: list[list[Line]]) -> BomMatch | None:
