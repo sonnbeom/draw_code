@@ -53,3 +53,13 @@ def bbox(lines: list[Line]) -> tuple[float, float, float, float]:
     all_x = [v for ln in lines for v in (ln.x1, ln.x2)]
     all_y = [v for ln in lines for v in (ln.y1, ln.y2)]
     return min(all_x), max(all_x), min(all_y), max(all_y)
+
+def find_slot(value: float, bounds: list[float]) -> int | None:
+    """bounds(오름차순 경계)에서 value가 들어가는 구간 번호. 경계 위나 범위 밖이면 None
+    예: bounds [99.2, 117.6, 136.0, 154.5], value 126.8 → 117.6 < 126.8 < 136.0 → 1
+    select_bom(상위 행 판정)과 connect(행·열 판정)가 같이 쓰므로 여기에 둔다
+    """
+    for index in range(len(bounds) - 1):
+        if bounds[index] < value < bounds[index + 1]:  # 경계와 딱 같으면 어느 칸인지 모르므로 제외
+            return index
+    return None
