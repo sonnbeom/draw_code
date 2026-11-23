@@ -42,15 +42,18 @@ def _ends(line: Line) -> list[tuple[Point, Point]]:
     p1, p2 = (line.x1, line.y1), (line.x2, line.y2)
     return [(p1, p2), (p2, p1)]
 
-# ① 하위 bom 윗변 -----------------------------------------------------------------
-def find_top(group: list[Line]) -> Line | None:
-    """ 가로선(길이가 유사한 약간의 오차는 허용한다)이 3개 이상이면 그 중 맨 위 선을, 아니면 None을 리턴 """
+def full_width_lines(group: list[Line]) -> list[Line]:
+    """꽉 찬 가로선: 가장 긴 가로선과 길이가 거의 같은 가로선들 (표 윗변·행 경계·아랫변, 샘플은 취소선도)"""
     horizontals = [ln for ln in group if is_horizontal(ln)]
     if not horizontals:
-        return None
+        return []
     longest = max(length(ln) for ln in horizontals)
-    full = [ln for ln in horizontals if length(ln) >= longest - FULL_LEN_TOL]
+    return [ln for ln in horizontals if length(ln) >= longest - FULL_LEN_TOL]
 
+# ① 하위 bom 윗변 -----------------------------------------------------------------
+def find_top(group: list[Line]) -> Line | None:
+    """ 꽉 찬 가로선이 3개 이상이면 그 중 맨 위 선을, 아니면 None을 리턴 """
+    full = full_width_lines(group)
     if len(full) < MIN_FULL_ROWS:
         return None
     return min(full, key=lambda ln: _y_range(ln)[0])  # 두 끝 중 위쪽 y가 가장 작은 선 = 맨 위
