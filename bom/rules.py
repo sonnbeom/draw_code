@@ -10,10 +10,21 @@ from dataclasses import dataclass
 from bom.extract_lines import Line
 from bom.geometry import TOUCH_TOL, find_slot, is_horizontal, length
 from bom.glyphs import Glyph, MatchResult, line_center, match_glyphs, split_text_lines, strokes_by_cell, text_height
+from bom.parent_cells import find_parent_areas, strokes_by_parent_cell
+from bom.select_bom import BomMatch
 from bom.split_cells import BomGrid, is_struck
 from bom.table_candidates import MIN_TABLE_LINE
 
 OK, STRUCK, REVIEW = "정상", "취소", "검수"
+DELETED, REPLACED = "삭제", "교체"
+
+
+@dataclass(frozen=True)
+class ParentMark:
+    """취소선이 있는 상위 행 하나"""
+    box_side: Line   # 어느 상위 박스인지 (ParentLink.connector.box_side와 같은 선)
+    row: int         # 상위 행 번호 (= ParentLink.box_row)
+    status: str      # 삭제 / 교체
 
 @dataclass(frozen=True)
 class CellMark:
@@ -75,4 +86,28 @@ def mark_cells(grid: BomGrid, lines: list[Line], glyphs: list[Glyph],
                 strikes = [s for s in text_line if _is_long_strike(s, text_line)]
                 status, text = (STRUCK if strikes else OK), ""
             marks.append(CellMark(row, col, line_no, status, text, strikes))
+    return marks
+
+
+# ── 상위 삭제/교체 (4-1 ④, docs/06) ──────────────────────────────────────
+def _is_replaced(struck_flags: list[bool]) -> bool:
+    """칸 안 줄들의 취소 여부 (위 → 아래). 취소된 줄 바로 아래에 취소 안 된 줄이 있으면 교체"""
+    return any(struck_flags[i] and not struck_flags[i + 1] for i in range(len(struck_flags) - 1))
+
+
+def mark_parents(match: BomMatch, lines: list[Line]) -> list[ParentMark]:
+    """상위 박스·표의 행마다 삭제/교체 판정. 취소선 없는 행은 결과에 안 넣음
+    상위 품번 취소선은 품번 전체를 긋는 긴 선이라 사전 없이 _is_long_strike로 충분"""
+    marks = []
+    for area in find_parent_areas(match):
+        by_cell = strokes_by_parent_cell(area, lines)
+        height = text_height(by_cell)
+        struck_rows: dict[int, bool] = {}    # 행 → 교체인지 (취소선 있는 행만)
+        for (row, col), strokes in by_cell.items():
+            text_lines = split_text_lines(strokes, height)
+            flags = [any(_is_long_strike(s, t) for s in t) for t in text_lines]   # 줄마다 취소인지
+            if any(flags):
+                struck_rows[row] = struck_rows.get(row, False) or _is_replaced(flags)
+        for row, replaced in sorted(struck_rows.items()):
+            marks.append(ParentMark(area.box_side, row, REPLACED if replaced else DELETED))
     return marks
