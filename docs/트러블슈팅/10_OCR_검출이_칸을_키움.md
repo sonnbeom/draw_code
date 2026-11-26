@@ -1,6 +1,6 @@
 # 10. 칸 모드 OCR이 글자를 거의 못 읽음
 
-> 5단계 `bom/ocr.py`·`bom/cell_image.py` 구현 중. 설계는 [19](../설계/19_OCR_전략.md)
+> 5단계 `bom/read_text/ocr.py`·`bom/read_text/cell_image.py` 구현 중. 설계는 [19](../설계/19_OCR_전략.md)
 
 ## 증상
 1. 칸 그림을 RapidOCR(검출 + 인식)에 넣었더니 case_0601 3행 품번 `88114-TQ200`이 `1`, `A`, `?`, `一`로 나옴. 머리글 `PART NAME`은 `>`, `4`. 칸 하나에 1~2초
