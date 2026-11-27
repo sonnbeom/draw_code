@@ -21,7 +21,7 @@ from bom.cells.split_cells import BomGrid
 TEXT_PX = 32     # 글자 높이를 그림에서 몇 px로
 PAD_Y = 8        # 위아래 여백 → 한 줄 그림 높이 32 + 8×2 = 48 (RapidOCR 인식 모델 입력 높이)
 PAD_X = 8        # 좌우 여백
-THICKNESS = 3    # 선 굵기 px (CAD 획은 가늘어서 조금 굵게. 결과 보고 조정)
+THICKNESS = 2    # 선 굵기 px. 3 → 2 (2026-11-27): 0001~0600 품명 99.6% → 100.0% (D→O 14·5→S 12 사라짐), docs/OCR/24
 
 
 @dataclass(frozen=True)

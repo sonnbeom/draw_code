@@ -216,7 +216,6 @@ def main() -> None:
         top = confusion[name].most_common(10)    # 많은 순 10개
         if top:
             line = "    혼동 (정답→읽음): " + ", ".join(f"{show(a)}→{show(b)} {c}" for (a, b), c in top)
-            summary.append(line.strip())
             print(line)
     total_d = sum(v[0] for v in dist.values())
     total_chars = sum(v[1] for v in dist.values())
