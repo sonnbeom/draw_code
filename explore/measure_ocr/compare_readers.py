@@ -15,7 +15,7 @@ import json
 import re
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import cv2
@@ -31,6 +31,7 @@ from bom.strikes.rules import OK, mark_cells
 from bom.find_table.select_bom import select_bom
 from bom.cells.split_cells import split_cells
 from bom.find_table.table_candidates import find_table_candidates
+from explore.measure_ocr.metrics import edit_ops
 
 SAMPLE_DIR = Path(r"C:\sample_data")
 TRUTH = Path(r"C:\sample_data\ground_truth_1000.json")
@@ -112,6 +113,11 @@ def name_key(name: str) -> str:
     return {"품번": "partno", "품명": "name"}[name]
 
 
+def show(ch: str) -> str:
+    """혼동 목록 표시용: 빈칸·공백을 글자로"""
+    return {"": "(없음)", " ": "(공백)"}.get(ch, ch)
+
+
 def main() -> None:
     lo, hi = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) >= 3 else (600, 650)
     mode = sys.argv[3] if len(sys.argv) >= 4 else "cell"
@@ -124,6 +130,8 @@ def main() -> None:
 
     # 열 이름 → [칸 수, OCR 정확, OCR 느슨, 사전 정확, 사전 대상 칸 수]
     stats = defaultdict(lambda: [0, 0, 0, 0, 0])
+    dist = defaultdict(lambda: [0, 0])   # 열 이름 → [편집 거리 합, 정답 글자 수 합]
+    confusion = defaultdict(Counter)     # 열 이름 → {(정답 글자, 읽은 글자): 횟수}
     wrong = defaultdict(list)
     skipped = drawings = cells_read = 0
     for pdf in sorted(SAMPLE_DIR.glob("case_*.pdf"))[lo:hi]:
@@ -175,11 +183,15 @@ def main() -> None:
                 st[0] += 1
                 st[1] += got == want
                 st[2] += loose(got) == loose(want)
+                ops = edit_ops(got, want)        # CER은 정확 기준 (0/O 틀림도 셈)
+                dist[name][0] += len(ops)        # 수정 개수 = 편집 거리
+                dist[name][1] += len(want)
+                confusion[name].update(ops)
                 if ms and name in ("I/NO", "수량"):
                     st[4] += 1
                     st[3] += "".join(m.text for m in ms) == want
                 if got != want and len(wrong[name]) < EXAMPLES:
-                    wrong[name].append((pdf.stem[-4:], r, got, want))
+                    wrong[name].append((pdf.stem[-4:], r, got, want, len(ops)))
                 if name in REPORT_COLS and imgs:
                     right = loose(got) == loose(want)
                     have = sum(x[5] == right for x in report[name])
@@ -193,12 +205,24 @@ def main() -> None:
     summary = []
     for name in ("I/NO", "품번", "품명", "수량"):
         n, ok, ok_loose, d_ok, d_n = stats[name]
+        d_sum, chars = dist[name]
         dict_part = f", 사전 {d_ok}/{d_n} ({d_ok / d_n:.1%})" if d_n else ""
-        line = f"{name}: OCR 정확 {ok}/{n} ({ok / max(n, 1):.1%}), 느슨 {ok_loose}/{n} ({ok_loose / max(n, 1):.1%}){dict_part}"
+        line = (f"{name}: OCR 정확 {ok}/{n} ({ok / max(n, 1):.1%}), 느슨 {ok_loose}/{n} ({ok_loose / max(n, 1):.1%})"
+                f"{dict_part}, CER {d_sum / max(chars, 1):.3%} ({d_sum}/{chars})")
         summary.append(line)
         print(line)
-        for case, r, got, want in wrong[name]:
-            print(f"    {case} 행{r}: 나옴 {got!r} / 정답 {want!r}")
+        for case, r, got, want, d in wrong[name]:
+            print(f"    {case} 행{r}: 나옴 {got!r} / 정답 {want!r}  거리 {d}")
+        top = confusion[name].most_common(10)    # 많은 순 10개
+        if top:
+            line = "    혼동 (정답→읽음): " + ", ".join(f"{show(a)}→{show(b)} {c}" for (a, b), c in top)
+            summary.append(line.strip())
+            print(line)
+    total_d = sum(v[0] for v in dist.values())
+    total_chars = sum(v[1] for v in dist.values())
+    line = f"전체 CER {total_d / max(total_chars, 1):.3%} ({total_d}/{total_chars})"
+    summary.append(line)
+    print(line)
     out = OUT_ROOT / f"ocr_{mode}_{model}"
     write_report(out, head, summary, {name: report[name] for name in REPORT_COLS})
     print(f"그림 보고서: {out / 'report.md'}")

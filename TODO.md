@@ -89,7 +89,7 @@
   - [ ] A5 I/NO `4` 사전 추가 (88300·88400 검수), 상위 칸 OCR (빈 `bom/find_table.py`는 폴더 정리 때 삭제함)
   - [x] 품명: 글자 크기·펜 굵기를 바꿔 5번 그려 읽고 다수결 → 220개 측정 (docs/OCR/22 5절): 99.82% → 100%, 망친 칸 0, 검수 표시 43칸(거짓 경보 38), 칸당 178ms. `bom/`에 넣는 건 학습 후 결정
   - [x] 모듈 폴더 정리 (2026-11-26): `bom/` pdf_lines·find_table·cells·links·strikes·read_text·dictionary, `explore/` checks·measure_ocr·tools (docs/16). 확인 스크립트·OCR 측정 결과 전부 이전과 같음
-  - [ ] 평가 기준 추가: CER·혼동 글자 목록 (`compare_readers`) → 학습 전 숫자 재 두기 (docs/OCR/23 5절)
+  - [x] 평가 기준 추가: CER·혼동 글자 목록 (`explore/measure_ocr/metrics.py` + `compare_readers`), 학습 전 숫자 기록 (docs/OCR/23 5절, 2026-11-27)
   - [ ] 학습 준비: PaddlePaddle CPU + PaddleOCR 따로 만든 환경에 설치 (크기 확인 후) → 줄 그림 + 줄별 정답 데이터 (0001~0600) → 학습 → ONNX → 0601~0820 비교 (docs/OCR/23)
   - [ ] 학습 후: 품명 5번 읽기 검수 칸(지금 43) 다시 재고 `bom/`에 넣을지 결정
   - [ ] (학습 후) 모델 앙상블 검토: 학습 모델·중국어 모델·Tesseract 중 두 번째 투표자 고르기, 크기·굵기 바꿔 읽기와 섞어 220개 측정 (docs/OCR/22)
